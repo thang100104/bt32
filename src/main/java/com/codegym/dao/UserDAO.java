@@ -117,6 +117,73 @@ public class UserDAO implements IUserDAO {
     }
 
     @Override
+    public void addUserTransaction(User user, int[] permissionIds) throws SQLException {
+        Connection connection = null;
+
+        try {
+            connection = getConnection();
+            connection.setAutoCommit(false);
+
+            int userId;
+            String insertUserSql =
+                    "INSERT INTO users(name, email, country) VALUES (?, ?, ?)";
+
+            try (PreparedStatement psUser = connection.prepareStatement(
+                    insertUserSql, Statement.RETURN_GENERATED_KEYS)) {
+
+                psUser.setString(1, user.getName());
+                psUser.setString(2, user.getEmail());
+                psUser.setString(3, user.getCountry());
+                psUser.executeUpdate();
+
+                try (ResultSet rs = psUser.getGeneratedKeys()) {
+                    if (!rs.next()) {
+                        throw new SQLException("Không lấy được ID của User vừa thêm.");
+                    }
+                    userId = rs.getInt(1);
+                }
+            }
+
+            if (permissionIds != null) {
+                String insertPermissionSql =
+                        "INSERT INTO user_permission(user_id, permission_id) VALUES (?, ?)";
+
+                try (PreparedStatement psPermission =
+                             connection.prepareStatement(insertPermissionSql)) {
+                    for (int permissionId : permissionIds) {
+                        psPermission.setInt(1, userId);
+                        psPermission.setInt(2, permissionId);
+                        psPermission.executeUpdate();
+                    }
+                }
+            }
+
+            connection.commit();
+            System.out.println("addUserTransaction: COMMIT thành công.");
+
+        } catch (SQLException e) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                    System.out.println("addUserTransaction: Có lỗi SQL, đã ROLLBACK.");
+                } catch (SQLException rollbackError) {
+                    rollbackError.printStackTrace();
+                }
+            }
+            throw e;
+
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException ignored) {
+                }
+                connection.close();
+            }
+        }
+    }
+
+    @Override
     public List<User> selectAllUsersUsingStoredProcedure() {
         List<User> users = new ArrayList<>();
         String sql = "{CALL get_all_users()}";
