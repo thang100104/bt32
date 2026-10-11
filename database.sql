@@ -1,0 +1,12 @@
+CREATE DATABASE IF NOT EXISTS demo;
+USE demo;
+
+DROP TABLE IF EXISTS Employee;
+
+CREATE TABLE Employee (
+    id INT(3) NOT NULL AUTO_INCREMENT,
+    name VARCHAR(120) NOT NULL,
+    salary DECIMAL(15,2) NOT NULL,
+    created_Date DATETIME,
+    PRIMARY KEY (id)
+);
