@@ -31,6 +31,9 @@ public class UserServlet extends HttpServlet {
                 case "test-use-tran":
                     testUseTran(request, response);
                     break;
+                case "test-add-user-tran":
+                    testAddUserTransaction(request, response);
+                    break;
                 case "edit":
                     showEditForm(request, response);
                     break;
@@ -115,11 +118,35 @@ public class UserServlet extends HttpServlet {
     private void testUseTran(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         userDAO.insertUpdateUseTransaction();
-        System.out.println("Hoàn tất gọi hàm testUseTran!");
 
         response.setContentType("text/html;charset=UTF-8");
-        response.getWriter().println("<h2>Đã chạy test có sử dụng Transaction.</h2>");
-        response.getWriter().println("<p>Hãy kiểm tra Console và chạy SELECT * FROM Employee; trong MySQL.</p>");
-        response.getWriter().println("<a href='" + request.getContextPath() + "/users'>Quay lại danh sách User</a>");
+        response.getWriter().println("<h2>Đã chạy test Transaction Employee.</h2>");
+        response.getWriter().println("<a href='" + request.getContextPath() + "/'>Quay lại</a>");
+    }
+
+    private void testAddUserTransaction(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        response.setContentType("text/html;charset=UTF-8");
+
+        User testUser = new User(
+                "User Transaction Test",
+                "transaction-test@codegym.vn",
+                "Viet Nam"
+        );
+
+        // ID 999 không tồn tại trong bảng permission.
+        // Foreign key sẽ làm câu INSERT permission lỗi để kiểm chứng rollback.
+        int[] permissionIds = {1, 999};
+
+        try {
+            userDAO.addUserTransaction(testUser, permissionIds);
+            response.getWriter().println("<h2>Transaction đã commit.</h2>");
+        } catch (SQLException e) {
+            response.getWriter().println("<h2>Đã cố tình tạo lỗi SQL và Transaction đã rollback.</h2>");
+            response.getWriter().println("<p>User thử nghiệm không được phép tồn tại trong bảng users.</p>");
+        }
+
+        response.getWriter().println("<p>Kiểm tra MySQL: SELECT * FROM users WHERE email='transaction-test@codegym.vn';</p>");
+        response.getWriter().println("<a href='" + request.getContextPath() + "/'>Quay lại</a>");
     }
 }
