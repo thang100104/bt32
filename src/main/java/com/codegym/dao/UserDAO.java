@@ -117,6 +117,55 @@ public class UserDAO implements IUserDAO {
     }
 
     @Override
+    public List<User> selectAllUsersUsingStoredProcedure() {
+        List<User> users = new ArrayList<>();
+        String sql = "{CALL get_all_users()}";
+
+        try (Connection connection = getConnection();
+             CallableStatement cs = connection.prepareCall(sql);
+             ResultSet rs = cs.executeQuery()) {
+
+            while (rs.next()) {
+                users.add(new User(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("email"),
+                        rs.getString("country")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return users;
+    }
+
+    @Override
+    public boolean updateUserUsingStoredProcedure(User user) throws SQLException {
+        String sql = "{CALL update_user(?, ?, ?, ?)}";
+
+        try (Connection connection = getConnection();
+             CallableStatement cs = connection.prepareCall(sql)) {
+            cs.setInt(1, user.getId());
+            cs.setString(2, user.getName());
+            cs.setString(3, user.getEmail());
+            cs.setString(4, user.getCountry());
+            return cs.executeUpdate() >= 0;
+        }
+    }
+
+    @Override
+    public boolean deleteUserUsingStoredProcedure(int id) throws SQLException {
+        String sql = "{CALL delete_user(?)}";
+
+        try (Connection connection = getConnection();
+             CallableStatement cs = connection.prepareCall(sql)) {
+            cs.setInt(1, id);
+            return cs.executeUpdate() >= 0;
+        }
+    }
+
+    @Override
     public void insertUpdateUseTransaction() {
         Connection conn = null;
 
@@ -142,11 +191,7 @@ public class UserDAO implements IUserDAO {
                 psInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
                 psInsert.execute();
 
-                // Cố tình gây lỗi để kiểm tra rollback.
                 psUpdate.setBigDecimal(2, new BigDecimal("999.99"));
-                // Khi muốn kiểm tra trường hợp thành công, đổi dòng trên thành:
-                // psUpdate.setBigDecimal(1, new BigDecimal("999.99"));
-
                 psUpdate.setString(2, "Quynh");
                 psUpdate.execute();
 
