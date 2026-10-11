@@ -9,6 +9,28 @@ CREATE TABLE IF NOT EXISTS users (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS permission (
+    id INT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_permission (
+    user_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    PRIMARY KEY (user_id, permission_id),
+    CONSTRAINT fk_user_permission_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_user_permission_permission
+        FOREIGN KEY (permission_id) REFERENCES permission(id)
+);
+
+INSERT IGNORE INTO permission(id, name) VALUES
+(1, 'add'),
+(2, 'edit'),
+(3, 'delete'),
+(4, 'view');
+
 DROP PROCEDURE IF EXISTS get_all_users;
 DELIMITER $$
 CREATE PROCEDURE get_all_users()
