@@ -1,6 +1,6 @@
 # BT32 - JDBC Transaction + MySQL Stored Procedures
 
-Repo gồm hai nội dung thực hành:
+Repo chứa các bài thực hành JDBC trên ứng dụng quản lý User.
 
 ## 1. JDBC Transaction
 - `setAutoCommit(false)`
@@ -9,34 +9,68 @@ Repo gồm hai nội dung thực hành:
 - kiểm chứng nguyên lý All-or-Nothing
 
 ## 2. Gọi MySQL Stored Procedures từ JDBC
-Ứng dụng quản lý User sử dụng `CallableStatement` cho:
+Sử dụng `CallableStatement` cho:
 - Hiển thị danh sách User
-- Cập nhật thông tin User
+- Cập nhật User
 - Xóa User
 
-Stored Procedures được khai báo trong `database.sql`:
-- `get_all_users()`
-- `update_user(...)`
-- `delete_user(...)`
+## 3. Bài tập Luyện tập MySQL JDBC Transaction
+
+Đã bổ sung phương thức:
+
+```java
+addUserTransaction(User user, int[] permissionIds)
+```
+
+Luồng xử lý:
+1. Tắt auto-commit.
+2. Insert User và lấy ID vừa sinh.
+3. Gán các permission vào `user_permission`.
+4. Nếu tất cả thành công thì `commit()`.
+5. Nếu một câu SQL lỗi thì `rollback()`.
+
+Route kiểm thử:
+
+`http://localhost:8080/user-management/users?action=test-add-user-tran`
+
+Bài test cố tình truyền permission ID `999` không tồn tại, khiến foreign key báo lỗi. Kết quả mong đợi là User thử nghiệm cũng bị rollback, không còn dữ liệu rác.
+
+Kiểm tra:
+
+```sql
+SELECT * FROM users
+WHERE email = 'transaction-test@codegym.vn';
+```
+
+Kết quả đúng khi rollback: **0 dòng**.
+
+## Chuẩn bị database
+
+Chạy:
+
+`database.sql`
+
+File này tạo thêm:
+- `permission`
+- `user_permission`
+- dữ liệu quyền mẫu 1–4
 
 ## Cấu hình MySQL
-Mở:
 
+Mở:
 `src/main/java/com/codegym/dao/UserDAO.java`
 
-và sửa:
+Sửa:
 
 ```java
 private final String jdbcUsername = "root";
 private final String jdbcPassword = "password";
 ```
 
-## Chuẩn bị database
-Chạy file:
-
-`database.sql`
+cho đúng tài khoản MySQL trên máy.
 
 ## Build
+
 ```bash
 mvn clean package
 ```
@@ -45,8 +79,4 @@ Deploy:
 
 `target/user-management.war`
 
-## Chạy quản lý User
-`http://localhost:8080/user-management/users`
-
-## Chạy bài Transaction
-`http://localhost:8080/user-management/users?action=test-use-tran`
+Repo: https://github.com/thang100104/bt32
